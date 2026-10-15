@@ -1,1 +1,389 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NexusPlay 3D — Play HTML5 Games Instantly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--c:#00f0ff;--f:#ff2bd6;--bg:#05050f;--t:#e8f1ff;--m:#8d97bd;--glass:rgba(18,20,48,.55);--line:rgba(120,140,255,.22)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t);font-family:'Chakra Petch',system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.5;overflow-x:hidden;min-height:100vh}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--c);outline-offset:3px}
+.glass{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+
+/* Navbar */
+header{position:sticky;top:0;z-index:20;padding:10px clamp(14px,4vw,40px);padding-top:max(10px,env(safe-area-inset-top));display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;border-width:0 0 1px}
+.logo{font-weight:700;font-size:1.45rem;letter-spacing:.04em;text-decoration:none;color:var(--c);text-shadow:0 0 14px var(--c)}
+.logo span{color:var(--f);text-shadow:0 0 14px var(--f)}
+.logo sup{font-size:.55em;border:1px solid var(--f);color:var(--f);padding:0 5px;margin-left:4px;border-radius:4px}
+.search{flex:1 1 220px;max-width:420px}
+.search input{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:999px;padding:9px 16px;outline:none;transition:.25s}
+.search input:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(0,240,255,.15),0 0 18px rgba(0,240,255,.25)}
+nav{display:flex;gap:8px;overflow-x:auto;flex:1 1 100%;scrollbar-width:none;padding-bottom:2px}
+nav::-webkit-scrollbar{display:none}
+.chip{flex:none;background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer;transition:.25s;white-space:nowrap}
+.chip:hover{border-color:var(--c);color:var(--c);transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,240,255,.2)}
+.chip.on{background:linear-gradient(90deg,var(--c),var(--f));border-color:transparent;color:#05050f;font-weight:600}
+@media(min-width:900px){nav{flex:0 1 auto}}
+
+/* Buttons */
+.btn{position:relative;overflow:hidden;border:0;cursor:pointer;border-radius:10px;padding:12px 28px;font-weight:700;color:#05050f;background:linear-gradient(90deg,var(--c),var(--f));transition:transform .25s,box-shadow .25s;box-shadow:0 0 18px rgba(0,240,255,.35)}
+.btn::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);transform:translateX(-120%);transition:transform .6s}
+.btn:hover:not(:disabled){transform:translateY(-3px) scale(1.03);box-shadow:0 8px 28px rgba(255,43,214,.5)}
+.btn:hover:not(:disabled)::after{transform:translateX(120%)}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:transparent;color:var(--t);border:1px solid var(--c);box-shadow:none}
+.btn.ghost:hover:not(:disabled){background:rgba(0,240,255,.12)}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:center;max-width:1280px;margin:0 auto;padding:clamp(24px,6vw,70px) clamp(14px,4vw,40px)}
+.hero h1{font-size:clamp(2.3rem,6.2vw,4.8rem);line-height:1.02;letter-spacing:-.01em;margin:10px 0 14px}
+.hero h1 em{font-style:normal;color:var(--c);text-shadow:0 0 28px rgba(0,240,255,.6)}
+.hero p{color:var(--m);max-width:46ch;margin-bottom:24px;font-size:1.05rem}
+.tag{display:inline-block;border:1px solid var(--f);color:var(--f);border-radius:999px;padding:3px 14px;font-size:.85rem;box-shadow:0 0 14px rgba(255,43,214,.3)}
+.hero .row{display:flex;gap:12px;flex-wrap:wrap}
+.stage{position:relative;aspect-ratio:1/1;max-height:520px;width:100%;border-radius:24px;overflow:hidden;box-shadow:0 0 60px rgba(255,43,214,.18),inset 0 0 40px rgba(0,240,255,.08)}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4;display:none}
+.stage canvas{position:relative;width:100%;height:100%;display:block}
+.stage .meta{position:absolute;left:14px;bottom:14px;right:14px;display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 14px;border-radius:14px;font-size:.9rem}
+.stage .meta b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stage .meta span{color:var(--c);white-space:nowrap}
+@media(max-width:860px){.hero{grid-template-columns:1fr}.stage{order:-1;max-height:300px;aspect-ratio:16/10}}
+
+/* Grid */
+main{max-width:1280px;margin:0 auto;padding:10px clamp(14px,4vw,40px) 60px}
+.bar{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 14px;gap:10px;flex-wrap:wrap}
+.bar h2{font-size:1.7rem}
+.bar small{color:var(--m)}
+#status{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;border-radius:14px;margin-bottom:20px;color:var(--m);font-size:.95rem}
+#status.err{border-color:var(--f);color:var(--t)}
+#status .btn{padding:7px 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:20px;perspective:1000px}
+.card{border-radius:18px;overflow:hidden;transition:transform .25s ease,border-color .25s,box-shadow .25s;transform:rotateX(var(--rx,0)) rotateY(var(--ry,0));will-change:transform;display:flex;flex-direction:column}
+.card:hover{transform:rotateX(var(--rx,0)) rotateY(var(--ry,0)) scale(1.05);border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 18px 44px rgba(0,240,255,.22),0 0 34px rgba(255,43,214,.18);z-index:2}
+.thumb{height:150px;display:grid;place-items:center;position:relative;overflow:hidden}
+.thumb .ph{font-size:3.4rem;opacity:.85}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s}
+.card:hover .thumb img{transform:scale(1.14)}
+.body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.body h3{font-size:1.08rem;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.body .cats{color:var(--c);font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.body .btn{margin-top:auto;padding:9px 0;width:100%}
+.skel{height:268px;border-radius:18px;background:linear-gradient(100deg,rgba(255,255,255,.03) 30%,rgba(0,240,255,.09) 50%,rgba(255,255,255,.03) 70%);background-size:200% 100%;animation:sh 1.4s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{grid-column:1/-1;text-align:center;color:var(--m);padding:50px 0}
+.more{display:flex;justify-content:center;margin-top:34px}
+footer{text-align:center;color:var(--m);padding:26px 14px calc(26px + env(safe-area-inset-bottom));border-top:1px solid var(--line);font-size:.9rem}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(2,2,10,.85);padding:12px}
+.modal[hidden]{display:none}
+.mbox{width:min(1000px,100%);border-radius:18px;overflow:hidden;box-shadow:0 0 60px rgba(0,240,255,.3)}
+.mh{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.mh b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh div{display:flex;gap:8px;flex:none}
+.mh button,.mh a{display:grid;place-items:center;background:none;border:1px solid var(--line);border-radius:8px;min-width:34px;height:34px;padding:0 10px;cursor:pointer;transition:.2s;text-decoration:none;color:var(--t);font-size:.85rem}
+.mh button:hover,.mh a:hover{border-color:var(--c);color:var(--c)}
+#mx:hover{border-color:var(--f);color:var(--f)}
+.mw{position:relative;background:#000}
+.mw iframe{width:100%;height:min(74vh,640px);border:0;display:block}
+.mw .ld{position:absolute;inset:0;display:grid;place-items:center;color:var(--m);pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;padding:10px 20px;border-radius:12px;display:none;max-width:92vw;text-align:center}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<header class="glass">
+  <a class="logo" href="#top">NEXUS<span>PLAY</span><sup>3D</sup></a>
+  <div class="search"><input id="q" type="search" placeholder="Search games by name..." aria-label="Search games" autocomplete="off"></div>
+  <nav id="cats" aria-label="Game categories"></nav>
+</header>
+
+<section class="hero" id="top">
+  <div>
+    <span class="tag">Live from the game feed</span>
+    <h1>Pick a game. <em>Play it now.</em></h1>
+    <p>NexusPlay 3D loads fresh HTML5 games the moment you arrive. Search, filter by category and play right here in your browser. No download, no install.</p>
+    <div class="row">
+      <button class="btn" id="heroPlay" disabled>Loading games...</button>
+      <button class="btn ghost" onclick="document.getElementById('games').scrollIntoView()">Browse games</button>
+    </div>
+  </div>
+  <div class="stage glass">
+    <img id="heroImg" alt="">
+    <canvas id="hero3d" aria-label="Rotating 3D emblem"></canvas>
+    <div class="meta glass"><b id="heroName">Featured game</b><span id="heroCat">...</span></div>
+  </div>
+</section>
+
+<main id="games">
+  <div class="bar"><h2 id="title">All games</h2><small id="count"></small></div>
+  <div id="status" class="glass" role="status"></div>
+  <div class="grid" id="grid"></div>
+  <div class="more"><button class="btn" id="moreBtn" hidden>Show more games</button></div>
+</main>
+
+<footer>© 2026 NexusPlay 3D. Games are provided by their respective publishers.</footer>
+
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="mt">
+  <div class="mbox glass">
+    <div class="mh"><b id="mt"></b>
+      <div><a id="mo" href="#" target="_blank" rel="noopener noreferrer">Open in new tab</a><button id="mf" type="button">Fullscreen</button><button id="mx" type="button" aria-label="Close">✕</button></div>
+    </div>
+    <div class="mw" id="mw"></div>
+  </div>
+</div>
+<div id="toast" class="glass" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =====================================================================
+   SETTINGS
+   SOURCES: feeds are tried in order; the first one that returns games wins.
+   MY_PROXY: optional. If the browser blocks the feed (CORS), deploy a tiny proxy
+   (Cloudflare Worker / Netlify function) and put its URL here, e.g.
+   'https://my-proxy.example.workers.dev/?url=' — the feed URL is appended to it.
+   ===================================================================== */
+const SOURCES=[
+  /* 1) games.json next to index.html (refreshed daily by the GitHub Action, no CORS problem) */
+  {name:'games.json',paged:false,url:()=>'games.json'},
+  /* 2) the URL you asked for. NOTE: it returned HTTP 404 when I tested it, so it is skipped automatically if it fails */
+  {name:'rss-games',paged:false,url:()=>'https://gamemonetize.com/rss-games.php?format=json&category=All&type=html5'},
+  /* 3) the live feed, works only if the browser/proxy is allowed to reach it */
+  {name:'GameMonetize',paged:true,url:p=>`https://gamemonetize.com/feed.php?format=0&num=40&page=${p}`}
+];
+const MY_PROXY='';
+
+/* FALLBACK: shown only when the live feed cannot be reached, so the page is never empty.
+   Free, open-source HTML5 games hosted on GitHub Pages (links taken from a games list
+   checked in Aug 2026; independent projects can move or go offline). No thumbnails are
+   available for them, so cards use a colored placeholder. */
+const FALLBACK=[
+  {t:'2048',url:'https://gabrielecirulli.github.io/2048/',thumb:'',cat:'Puzzle',tags:'puzzle'},
+  {t:'Hextris',url:'https://hextris.github.io/hextris',thumb:'',cat:'Puzzle',tags:'puzzle'},
+  {t:'Blockrain',url:'https://aerolab.github.io/blockrain.js/',thumb:'',cat:'Puzzle',tags:'puzzle'},
+  {t:'Minesweeper',url:'https://michaelbutler.github.io/minesweeper/',thumb:'',cat:'Puzzle',tags:'puzzle, logic'},
+  {t:'Astray 3D Maze',url:'https://wwwtyro.github.io/Astray/',thumb:'',cat:'3D',tags:'3d, maze'},
+  {t:'Asteroid Destroyer 3D',url:'https://juntaow0.github.io/WebGL_Asteroid_Destroyer/',thumb:'',cat:'3D, Action',tags:'3d, shooter'},
+  {t:'Cube Engine',url:'https://nurgak.github.io/Cube-engine/',thumb:'',cat:'3D',tags:'3d, sandbox'},
+  {t:'Space Huggers',url:'https://killedbyapixel.github.io/SpaceHuggers/',thumb:'',cat:'Action',tags:'action, platformer'},
+  {t:'Asteroids',url:'https://schteppe.github.io/p2.js/examples/canvas/asteroids.html',thumb:'',cat:'Action',tags:'action, shooter'},
+  {t:'Alien Invasion',url:'https://cykod.github.io/AlienInvasion/',thumb:'',cat:'Action',tags:'action, shooter'}
+];
+const PROXY_FALLBACK='https://api.allorigins.win/raw?url='; // public proxy used only if the direct request fails
+const PAGE=48;
+
+/* Category chips: a game belongs to a chip when its category or tags match. */
+const CATS={
+  Action:/action|shoot|fight|arcade|adventure|runner|war|zombie|hyper|survival/,
+  '3D':/3d/,
+  Sports:/sport|football|soccer|basket|racing|golf|car|bike|tennis|bowling|billiard/,
+  Puzzle:/puzzle|match|brain|word|board|mahjong|quiz|solitaire|bubble|logic/
+};
+const NAMES=['All',...Object.keys(CATS)];
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const ALL=[],seen=new Set(),st={cat:'All',q:'',shown:PAGE};
+let active=null,page=1,loading=false,featured=null;
+
+/* ============ FETCH ============ */
+async function getJSON(u){
+  let t;
+  const timeout=new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error('timeout')),15000)});
+  try{
+    const r=await Promise.race([fetch(u),timeout]);
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const txt=await Promise.race([r.text(),timeout]);
+    return JSON.parse(txt.replace(/^\uFEFF/,''));
+  }finally{clearTimeout(t)}
+}
+const routes=u=>/^https?:/i.test(u)?[u,...(MY_PROXY?[MY_PROXY+encodeURIComponent(u)]:[]),PROXY_FALLBACK+encodeURIComponent(u)]:[u];
+const https=u=>String(u||'').replace(/^http:\/\//i,'https://');
+
+/* Accepts an array, or an object that wraps the array (games / items / data / results). */
+function normalize(d){
+  const list=Array.isArray(d)?d:(d&&(d.games||d.items||d.data||d.results||d.feed))||[];
+  if(!Array.isArray(list))return[];
+  return list.map(x=>{
+    const cat=[].concat(x.category||x.categories||x.genre||[]).join(', ');
+    const tags=[].concat(x.tags||[]).join(', ');
+    const th=x.thumb||x.thumbnail||x.image||x.icon||(Array.isArray(x.thumbs)?x.thumbs[0]:'')||'';
+    return{t:String(x.title||x.name||'').trim(),url:https(x.url||x.link||x.game_url||x.embed||''),thumb:https(th),cat:cat||'Game',tags};
+  }).filter(g=>g.t&&/^https:\/\//.test(g.url));
+}
+async function pull(src,p){
+  for(const u of routes(src.url(p))){
+    try{const items=normalize(await getJSON(u));if(items.length)return items}
+    catch(e){console.warn('Feed request failed:',u,e.message)}
+  }
+  return null;
+}
+function addGames(items){
+  let n=0;
+  items.forEach(g=>{
+    if(seen.has(g.url))return;seen.add(g.url);
+    const blob=(g.cat+' '+g.tags+' '+g.t).toLowerCase();
+    g.c=Object.keys(CATS).filter(k=>CATS[k].test(blob));
+    ALL.push(g);n++;
+  });
+  return n;
+}
+
+/* ============ STATUS / UI ============ */
+function setStatus(msg,err,retry){
+  const s=$('#status');s.className='glass'+(err?' err':'');s.hidden=!msg;
+  s.innerHTML=esc(msg)+(retry?' <button class="btn" id="retry" type="button">Try again</button>':'');
+  if(retry)$('#retry').onclick=init;
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.id);toast.id=setTimeout(()=>t.style.display='none',4500)}
+function renderCats(){$('#cats').innerHTML=NAMES.map(c=>`<button class="chip${c===st.cat?' on':''}" data-cat="${c}">${c}</button>`).join('')}
+const filtered=()=>{
+  const q=st.q.trim().toLowerCase();
+  return ALL.map((g,i)=>({g,i})).filter(({g})=>(st.cat==='All'||g.c.includes(st.cat))&&(!q||g.t.toLowerCase().includes(q)));
+};
+function hue(s){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))%360;return h}
+function render(){
+  const list=filtered();
+  $('#title').textContent=st.cat==='All'?'All games':st.cat+' games';
+  $('#count').textContent=ALL.length?`${list.length} of ${ALL.length} games`:'';
+  const g=$('#grid');
+  if(!ALL.length){g.innerHTML=loading?Array(8).fill('<div class="skel"></div>').join(''):'';}
+  else g.innerHTML=list.length?list.slice(0,st.shown).map(({g,i})=>{
+    const h=hue(g.t);
+    return `<article class="card glass">
+      <div class="thumb" style="background:linear-gradient(135deg,hsl(${h} 90% 45%),hsl(${(h+70)%360} 90% 38%))">
+        <span class="ph">${esc(g.t[0].toUpperCase())}</span>
+        ${g.thumb?`<img src="${esc(g.thumb)}" alt="${esc(g.t)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`:''}
+      </div>
+      <div class="body"><h3>${esc(g.t)}</h3><div class="cats">${esc(g.cat)}</div>
+      <button class="btn" data-i="${i}" type="button">العب الآن | Play Now</button></div>
+    </article>`}).join(''):'<p class="empty">No games match your search. Try another name or category.</p>';
+  const mb=$('#moreBtn');
+  mb.hidden=!ALL.length||!(st.shown<list.length||(active&&active.paged&&!active.done));
+}
+
+/* ============ EVENTS ============ */
+$('#cats').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;st.cat=b.dataset.cat;st.shown=PAGE;renderCats();render()});
+let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{st.q=e.target.value;st.shown=PAGE;render()},120)});
+$('#grid').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b)openGame(ALL[+b.dataset.i])});
+$('#heroPlay').onclick=()=>featured&&openGame(featured);
+$('#moreBtn').onclick=async function(){
+  if(st.shown<filtered().length){st.shown+=PAGE;render();return}
+  if(!active||!active.paged||loading)return;
+  loading=true;this.disabled=true;this.textContent='Loading...';
+  const items=await pull(active,page+1);
+  if(items&&addGames(items)){page++;st.shown+=PAGE}
+  else{active.done=true;toast('No more games available from the feed right now.')}
+  loading=false;this.disabled=false;this.textContent='Show more games';render();
+};
+/* 3D tilt on cards (mouse only) */
+$('#grid').addEventListener('mousemove',e=>{
+  const c=e.target.closest('.card');if(!c)return;
+  const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+  c.style.setProperty('--ry',(x*12)+'deg');c.style.setProperty('--rx',(-y*12)+'deg');
+});
+$('#grid').addEventListener('mouseout',e=>{const c=e.target.closest('.card');if(c){c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')}});
+
+/* ============ MODAL + IFRAME PLAYER ============ */
+function openGame(g){
+  if(!g)return;
+  $('#mt').textContent=g.t;$('#mo').href=g.url;
+  $('#mw').innerHTML=`<div class="ld" id="ld">Loading game...</div><iframe id="gf" src="${esc(g.url)}" title="${esc(g.t)}" allow="fullscreen; autoplay; gamepad; accelerometer; gyroscope; clipboard-write" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-pointer-lock allow-modals"></iframe>`;
+  $('#gf').onload=()=>{const l=$('#ld');if(l)l.remove()};
+  $('#modal').hidden=false;$('#mx').focus();
+}
+function closeGame(){$('#modal').hidden=true;$('#mw').innerHTML=''}
+$('#mx').onclick=closeGame;
+$('#mf').onclick=()=>{const f=$('#gf');if(f&&f.requestFullscreen)f.requestFullscreen().catch(()=>{})};
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeGame()});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeGame()});
+
+/* ============ START ============ */
+function setFeatured(){
+  const pool=ALL.filter(g=>g.thumb).slice(0,24);
+  featured=pool.length?pool[Math.random()*pool.length|0]:ALL[0];
+  if(!featured)return;
+  $('#heroName').textContent=featured.t;$('#heroCat').textContent=featured.cat.split(',')[0];
+  const im=$('#heroImg');
+  if(featured.thumb){im.src=featured.thumb;im.referrerPolicy='no-referrer';im.onload=()=>im.style.display='block';im.onerror=()=>im.remove()}
+  const b=$('#heroPlay');b.disabled=false;b.textContent='Play '+featured.t;
+}
+async function init(){
+  loading=true;ALL.length=0;seen.clear();active=null;page=1;render();
+  setStatus('Loading games from the feed...');
+  for(const s of SOURCES){
+    s.done=false;
+    const items=await pull(s,1);
+    if(items){active=s;addGames(items);break}
+  }
+  loading=false;
+  if(!ALL.length){
+    addGames(FALLBACK.map(g=>({...g})));
+    setStatus('The live game feed could not be reached, so a built-in list of free games is shown. Add games.json (see the setup notes) or set MY_PROXY to load the full feed.',false,true);
+    setFeatured();render();return;
+  }
+  setStatus('');setFeatured();render();
+}
+renderCats();init();
+
+/* ============ THREE.JS BACKGROUND + HERO EMBLEM ============ */
+(function(){
+  if(!window.THREE)return;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let mx=0,my=0;
+  addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5});
+  const cyan=new THREE.Color(0x00f0ff),fuch=new THREE.Color(0xff2bd6);
+  const R=new THREE.WebGLRenderer({canvas:$('#bg'),antialias:true,alpha:true});
+  R.setPixelRatio(Math.min(devicePixelRatio,2));
+  const S=new THREE.Scene();S.fog=new THREE.FogExp2(0x05050f,.03);
+  const C=new THREE.PerspectiveCamera(60,1,.1,200);C.position.set(0,2,14);
+  const N=innerWidth<700?900:1900,pos=new Float32Array(N*3),col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    pos[i*3]=(Math.random()-.5)*90;pos[i*3+1]=Math.random()*40-6;pos[i*3+2]=(Math.random()-.5)*90;
+    const c=Math.random()<.5?cyan:fuch;col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const pts=new THREE.Points(geo,new THREE.PointsMaterial({size:.13,vertexColors:true,transparent:true,opacity:.85}));
+  S.add(pts);
+  const grid=new THREE.GridHelper(140,70,0x00f0ff,0xff2bd6);
+  grid.position.y=-6;grid.material.transparent=true;grid.material.opacity=.3;S.add(grid);
+
+  const hc=$('#hero3d'),HR=new THREE.WebGLRenderer({canvas:hc,antialias:true,alpha:true});
+  HR.setPixelRatio(Math.min(devicePixelRatio,2));
+  const HS=new THREE.Scene(),HC=new THREE.PerspectiveCamera(45,1,.1,50);HC.position.z=6;
+  const knot=new THREE.Mesh(new THREE.TorusKnotGeometry(1.45,.42,160,18),new THREE.MeshBasicMaterial({color:0xff2bd6,wireframe:true,transparent:true,opacity:.8}));
+  const core=new THREE.Mesh(new THREE.IcosahedronGeometry(.8,1),new THREE.MeshBasicMaterial({color:0x00f0ff,wireframe:true}));
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(2.5,.015,8,120),new THREE.MeshBasicMaterial({color:0x00f0ff}));
+  ring.rotation.x=1.2;HS.add(knot,core,ring);
+
+  function size(){
+    R.setSize(innerWidth,innerHeight,false);C.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();
+    const w=hc.clientWidth||300,h=hc.clientHeight||300;HR.setSize(w,h,false);HC.aspect=w/h;HC.updateProjectionMatrix();
+  }
+  addEventListener('resize',size);size();
+  const clock=new THREE.Clock();
+  function frame(){
+    const t=clock.getElapsedTime();
+    C.position.x+=(mx*6-C.position.x)*.03;C.position.y+=(2-my*4-C.position.y)*.03;C.lookAt(0,1,0);
+    pts.rotation.y=t*.02;grid.position.z=(t*2)%2;
+    knot.rotation.x=t*.35+my*1.2;knot.rotation.y=t*.5+mx*1.8;
+    core.rotation.y=-t*.8;core.rotation.x=t*.4;ring.rotation.z=t*.6;
+    R.render(S,C);HR.render(HS,HC);
+    if(!reduce)requestAnimationFrame(frame);
+  }
+  frame();
+})();
+</script>
+</body>
+</html>
